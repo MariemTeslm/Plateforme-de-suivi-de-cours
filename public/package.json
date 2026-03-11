@@ -1,11 +1,12 @@
 {
-  "name": "backend",
+  "name": "pis3",
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "verify": "node verify-setup.js"
   },
   "keywords": [],
   "author": "",
@@ -22,10 +23,11 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-    "mysql2": "^3.15.3"
+    "mysql2": "^3.15.3",
+    "nodemailer": "^8.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
   },
-  "description": ""
+  "description": "PIS3 - Plateforme de Gestion Scolaire"
 }

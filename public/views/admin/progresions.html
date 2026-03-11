@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>supnum - Progression des Matieres</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+	:root {
+		--ok: #16a34a;
+		--mid: #f59e0b;
+		--low: #dc2626;
+		--panel: #ffffff;
+		--panel-border: #e2e8f0;
+	}
+
+	.progression-shell {
+		display: grid;
+		gap: var(--space-lg);
+	}
+
+	.hero {
+		background: radial-gradient(circle at top right, rgba(13, 148, 136, 0.16), transparent 48%), linear-gradient(135deg, #f8fffe 0%, #f8fafc 100%);
+		border: 1px solid var(--panel-border);
+		border-radius: var(--radius-lg);
+		padding: var(--space-xl);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.hero-title {
+		font-size: 1.6rem;
+		font-weight: 800;
+		margin-bottom: var(--space-xs);
+		color: #0f172a;
+	}
+
+	.hero-subtitle {
+		font-size: 0.95rem;
+		color: var(--text-secondary);
+	}
+
+	.toolbar {
+		display: flex;
+		gap: var(--space-md);
+		justify-content: space-between;
+		align-items: center;
+		flex-wrap: wrap;
+		background: var(--panel);
+		border: 1px solid var(--panel-border);
+		border-radius: var(--radius-lg);
+		padding: var(--space-md);
+	}
+
+	.toolbar-controls {
+		display: flex;
+		gap: var(--space-sm);
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	.toolbar select,
+	.toolbar input {
+		min-height: 42px;
+	}
+
+	.stats-grid-prog {
+		display: grid;
+		gap: var(--space-md);
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	}
+
+	.stat-prog {
+		background: var(--panel);
+		border: 1px solid var(--panel-border);
+		border-radius: var(--radius-md);
+		padding: var(--space-md);
+	}
+
+	.stat-prog .v {
+		font-size: 1.5rem;
+		font-weight: 800;
+		color: var(--primary-dark);
+	}
+
+	.stat-prog .l {
+		font-size: 0.82rem;
+		color: var(--text-secondary);
+	}
+
+	.table-card {
+		background: var(--panel);
+		border: 1px solid var(--panel-border);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow-sm);
+		overflow: hidden;
+	}
+
+	.table-toolbar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: var(--space-md);
+		flex-wrap: wrap;
+		padding: var(--space-md);
+		border-bottom: 1px solid var(--panel-border);
+	}
+
+	.table-toolbar h3 {
+		margin: 0;
+		font-size: 1rem;
+	}
+
+	.progress-cell {
+		min-width: 160px;
+	}
+
+	.progress-wrap {
+		display: grid;
+		gap: 6px;
+	}
+
+	.progress-meta {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 8px;
+		font-size: 0.78rem;
+		color: var(--text-secondary);
+	}
+
+	.progress-bar {
+		height: 9px;
+		width: 100%;
+		background: #edf2f7;
+		border-radius: 999px;
+		overflow: hidden;
+	}
+
+	.progress-fill {
+		height: 100%;
+		border-radius: 999px;
+		transition: width 300ms ease;
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 64px;
+		padding: 4px 8px;
+		border-radius: 999px;
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: #fff;
+	}
+
+	.bg-ok { background: var(--ok); }
+	.bg-mid { background: var(--mid); }
+	.bg-low { background: var(--low); }
+
+	.txt-note {
+		color: var(--text-secondary);
+		font-size: 0.85rem;
+	}
+
+	.error-box {
+		background: #fef2f2;
+		border-left: 4px solid var(--low);
+		color: #991b1b;
+		border-radius: var(--radius-sm);
+		padding: var(--space-md);
+	}
+
+	@media (max-width: 1024px) {
+		.main-content {
+			padding: var(--space-lg);
+		}
+
+		.hero {
+			padding: var(--space-lg);
+		}
+	}
+
+	@media (max-width: 760px) {
+		.hero-title {
+			font-size: 1.3rem;
+		}
+
+		.table-toolbar {
+			align-items: flex-start;
+		}
+	}
+</style>
+</head>
+<body>
+<div class="app-layout">
+	<aside class="sidebar">
+		<div class="sidebar-header">
+			<img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+			<span class="sidebar-title">SupNum</span>
+		</div>
+		<nav class="sidebar-nav"></nav>
+		<div style="margin-top:auto; padding-top:var(--space-xl); border-top:1px solid var(--border-light);">
+			<button onclick="logout()" class="btn btn-danger" style="width:100%;">Deconnexion</button>
+		</div>
+	</aside>
+
+	<main class="main-content">
+		<div class="progression-shell">
+			<section class="hero">
+				<div class="hero-title">Progression des matieres par groupe</div>
+				<div class="hero-subtitle">Suivez en temps reel l'avancement CM, TD et TP pour chaque matiere et chaque groupe.</div>
+			</section>
+
+			<section class="toolbar">
+				<div class="toolbar-controls">
+					<label for="groupFilter"><strong>Groupe</strong></label>
+					<select id="groupFilter">
+						<option value="">Tous les groupes</option>
+					</select>
+				</div>
+				<div class="toolbar-controls">
+					<input type="search" id="searchInput" placeholder="Rechercher une matiere ou un groupe">
+				</div>
+			</section>
+
+			<section class="stats-grid-prog">
+				<article class="stat-prog"><div class="v" id="stGlobal">0%</div><div class="l">Progression globale</div></article>
+				<article class="stat-prog"><div class="v" id="stTotal">0</div><div class="l">Heures totales</div></article>
+				<article class="stat-prog"><div class="v" id="stRealise">0</div><div class="l">Heures realisees</div></article>
+				<article class="stat-prog"><div class="v" id="stMatieres">0</div><div class="l">Matieres analysees</div></article>
+			</section>
+
+			<div id="errorBox"></div>
+
+			<section class="table-card">
+				<div class="table-toolbar">
+					<h3>Tableau de progression CM / TD / TP</h3>
+					<span class="txt-note" id="rowsNote">0 ligne</span>
+				</div>
+				<div class="table-responsive">
+					<table>
+						<thead>
+							<tr>
+								<th>Matiere</th>
+								<th>Groupe</th>
+								<th>Total CM / Realise CM / Progression</th>
+								<th>Total TD / Realise TD / Progression</th>
+								<th>Total TP / Realise TP / Progression</th>
+							</tr>
+						</thead>
+						<tbody id="progressionBody"></tbody>
+					</table>
+				</div>
+			</section>
+		</div>
+	</main>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script>
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+let allRows = [];
+
+function logout() {
+	localStorage.clear();
+	window.location.href = '../Login/index.html';
+}
+
+function progressionMeta(realise, total) {
+	const t = Number(total) || 0;
+	const r = Number(realise) || 0;
+	const p = t > 0 ? Math.max(0, Math.min(100, Math.round((r / t) * 100))) : 0;
+	return { total: t, realise: r, progress: p };
+}
+
+function getLevel(progress) {
+	if (progress >= 100) return { cls: 'bg-ok', color: 'var(--ok)', text: 'Terminee' };
+	if (progress >= 40) return { cls: 'bg-mid', color: 'var(--mid)', text: 'En cours' };
+	return { cls: 'bg-low', color: 'var(--low)', text: 'Faible' };
+}
+
+function createProgressCell(total, realise) {
+	const m = progressionMeta(realise, total);
+	const level = getLevel(m.progress);
+
+	return `
+		<div class="progress-cell">
+			<div class="progress-wrap">
+				<div class="progress-meta">
+					<span>${m.realise}/${m.total}</span>
+					<span class="badge ${level.cls}">${m.progress}%</span>
+				</div>
+				<div class="progress-bar">
+					<div class="progress-fill" style="width:${m.progress}%; background:${level.color};"></div>
+				</div>
+				<div class="txt-note">${level.text}</div>
+			</div>
+		</div>
+	`;
+}
+
+function setStatsFromRows(rows) {
+	let total = 0;
+	let realise = 0;
+	rows.forEach((r) => {
+		total += (Number(r.total_CM) || 0) + (Number(r.total_TD) || 0) + (Number(r.total_TP) || 0);
+		realise += (Number(r.realise_CM) || 0) + (Number(r.realise_TD) || 0) + (Number(r.realise_TP) || 0);
+	});
+
+	const global = total > 0 ? Math.round((realise / total) * 100) : 0;
+	document.getElementById('stGlobal').textContent = `${global}%`;
+	document.getElementById('stTotal').textContent = String(total);
+	document.getElementById('stRealise').textContent = String(realise);
+	document.getElementById('stMatieres').textContent = String(rows.length);
+}
+
+function renderTable(rows) {
+	const body = document.getElementById('progressionBody');
+	const note = document.getElementById('rowsNote');
+
+	if (!rows.length) {
+		body.innerHTML = '<tr><td colspan="5" class="txt-note">Aucune progression trouvee pour ce filtre.</td></tr>';
+		note.textContent = '0 ligne';
+		setStatsFromRows([]);
+		return;
+	}
+
+	body.innerHTML = rows.map((r) => `
+		<tr>
+			<td><strong>${r.nom_matiere || '-'}</strong><br><span class="txt-note">${r.code_matiere || ''}</span></td>
+			<td>${r.nom_groupe || '-'}</td>
+			<td>${createProgressCell(r.total_CM, r.realise_CM)}</td>
+			<td>${createProgressCell(r.total_TD, r.realise_TD)}</td>
+			<td>${createProgressCell(r.total_TP, r.realise_TP)}</td>
+		</tr>
+	`).join('');
+
+	note.textContent = `${rows.length} ligne${rows.length > 1 ? 's' : ''}`;
+	setStatsFromRows(rows);
+}
+
+function applyClientFilters() {
+	const term = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+	const filtered = allRows.filter((r) => {
+		if (!term) return true;
+		const matiere = (r.nom_matiere || '').toLowerCase();
+		const code = (r.code_matiere || '').toLowerCase();
+		const group = (r.nom_groupe || '').toLowerCase();
+		return matiere.includes(term) || code.includes(term) || group.includes(term);
+	});
+	renderTable(filtered);
+}
+
+function renderGroups(groups, selectedId) {
+	const select = document.getElementById('groupFilter');
+	select.innerHTML = '<option value="">Tous les groupes</option>';
+	(groups || []).forEach((g) => {
+		const option = document.createElement('option');
+		option.value = String(g.id_groupe);
+		option.textContent = g.nom;
+		select.appendChild(option);
+	});
+	if (selectedId) select.value = String(selectedId);
+}
+
+function showError(message) {
+	document.getElementById('errorBox').innerHTML = `<div class="error-box">${message}</div>`;
+}
+
+function clearError() {
+	document.getElementById('errorBox').innerHTML = '';
+}
+
+async function loadDashboard(idGroupe = '') {
+	try {
+		const userId = user.id || user.id_user;
+		const query = new URLSearchParams({ role: 'administrateur', id_user: String(userId) });
+		if (idGroupe) query.set('id_groupe', String(idGroupe));
+
+		const response = await API.get(`/api/progression/dashboard?${query.toString()}`);
+		if (!response.success) {
+			showError(response.message || 'Erreur lors du chargement de la progression.');
+			return;
+		}
+
+		clearError();
+		renderGroups(response.data.groups || [], response.data.selected_group);
+		allRows = response.data.matieres || [];
+		applyClientFilters();
+	} catch (error) {
+		showError(error.message || 'Erreur serveur.');
+	}
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+	const userId = user.id || user.id_user;
+	if (!userId || user.role !== 'administrateur') {
+		window.location.href = '../Login/index.html';
+		return;
+	}
+
+	document.getElementById('groupFilter').addEventListener('change', (event) => {
+		loadDashboard(event.target.value || '');
+	});
+
+	document.getElementById('searchInput').addEventListener('input', () => {
+		applyClientFilters();
+	});
+
+	loadDashboard();
+});
+</script>
+<script src="admin-sidebar.js"></script>
+</body>
+</html>

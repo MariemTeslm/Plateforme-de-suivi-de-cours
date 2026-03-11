@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>supnum - Administration & Emploi du temps</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+
+<style>
+.content { margin-left: 300px; padding: 40px; font-family: 'Plus Jakarta Sans', sans-serif; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px; }
+.quick-access-card { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; padding:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; text-decoration:none; color:var(--text-main); font-weight:600; font-size:0.95rem; transition:all 0.2s; }
+.quick-access-card:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+.form-box { background: var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:40px; max-width:600px; }
+.form-box label { display:block; margin-bottom:8px; font-weight:600; color:var(--text-main); }
+.form-box select { width:100%; padding:10px; margin-bottom:12px; border-radius:6px; border:1px solid var(--border); }
+.form-box button { padding:10px; width:100%; background:var(--primary); color:#fff; border:none; border-radius:6px; font-weight:600; cursor:pointer; }
+.form-box button:hover { background: var(--primary-hover); }
+.emploi-table { width:100%; border-collapse:collapse; margin-top:20px; background:var(--bg-card); border-radius:10px; overflow:hidden; }
+.emploi-table th, .emploi-table td { padding:12px; border:1px solid var(--border); font-size:0.95rem; text-align:left; }
+.emploi-table th { background:var(--primary); color:#fff; }
+.jour-cell { background: var(--primary); color:#fff; font-weight:600; text-align:center; }
+.cell-seance .ligne { margin-bottom:4px; }
+.cell-seance strong { color: var(--primary); display:inline-block; min-width:80px; }
+.empty { text-align:center; color:var(--text-secondary); font-style:italic; }
+.error { background: var(--danger-light); border-left:4px solid var(--danger); padding:12px; border-radius:6px; margin-bottom:20px; color:var(--danger); }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+        <span class="sidebar-title">SupNum</span>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="admin.html" class="nav-item active">🏠 Accueil</a>
+        <a href="gestionUtilisateur.html" class="nav-item">👥 Utilisateurs</a>
+        <a href="gestionsEtablissement.html" class="nav-item">🏢 Etablissements</a>
+        <a href="gestionEmploi.html" class="nav-item">📚 Emploi du temps</a>
+    </nav>
+    <div style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border-light);">
+        <button onclick="logout()" class="btn btn-danger" style="width:100%;">Déconnexion</button>
+    </div>
+</aside>
+
+<div class="content">
+
+<div class="stats-grid">
+    <a href="periode.html" class="quick-access-card"><span class="icon">⏱️</span><span>Périodes</span></a>
+    <a href="semaine.html" class="quick-access-card"><span class="icon">📅</span><span>Semaines</span></a>
+    <a href="ajouter_seance.html" class="quick-access-card"><span class="icon">📑</span><span>Séances</span></a>
+</div>
+
+<h2>Gestion de l'emploi du temps</h2>
+<div id="error-container"></div>
+
+<div class="form-box">
+    <label for="id_groupe">Filtrer par Groupe :</label>
+    <select id="id_groupe"><option value="">-- Sélectionner un groupe --</option></select>
+    <label for="id_professeur">Filtrer par Professeur :</label>
+    <select id="id_professeur"><option value="">-- Sélectionner un professeur --</option></select>
+    <button onclick="loadEmploiData()">Afficher l'emploi du temps</button>
+</div>
+
+<div id="emploi-container"></div>
+</div>
+
+<script>
+let allGroupes=[], allProfs=[];
+const jours=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+
+async function loadGroupes(){
+    try{
+        const res = await fetch('http://localhost:4000/api/emploi/groupes');
+        const result = await res.json();
+        if(result.success && result.data){
+            allGroupes=result.data;
+            const select=document.getElementById('id_groupe');
+            select.innerHTML='<option value="">-- Sélectionner un groupe --</option>';
+            allGroupes.forEach(g=>{const opt=document.createElement('option'); opt.value=g.id_groupe; opt.textContent=g.nom; select.appendChild(opt);});
+        }
+    }catch(err){showError('Erreur chargement groupes : '+err.message);}
+}
+
+async function loadProfs(){
+    try{
+        const res = await fetch('http://localhost:4000/api/emploi/professeurs');
+        const result = await res.json();
+        if(result.success && result.data){
+            allProfs=result.data;
+            const select=document.getElementById('id_professeur');
+            select.innerHTML='<option value="">-- Sélectionner un professeur --</option>';
+            allProfs.forEach(p=>{const opt=document.createElement('option'); opt.value=p.id_professeur; opt.textContent=p.nom; select.appendChild(opt);});
+        }
+    }catch(err){showError('Erreur chargement professeurs : '+err.message);}
+}
+
+async function loadEmploiData(){
+    const id_groupe=document.getElementById('id_groupe').value;
+    const id_professeur=document.getElementById('id_professeur').value;
+    try{
+        const params = new URLSearchParams();
+        if (id_groupe) params.set('id_groupe', id_groupe);
+        if (id_professeur) params.set('id_professeur', id_professeur);
+        const url=`http://localhost:4000/api/emploi/data${params.toString() ? `?${params.toString()}` : ''}`;
+        const res=await fetch(url);
+        const result=await res.json();
+        if(result.success && result.data){renderEmploiTable(result.data); clearError();} 
+        else showError('Erreur : '+(result.message||'Impossible de charger l\'emploi'));
+    }catch(err){showError('Erreur réseau : '+err.message);}
+}
+
+function renderEmploiTable(data){
+    const { periodes, emploi, jours: joursData } = data;
+    let html='<table class="emploi-table"><thead><tr><th>Jour</th>';
+    periodes.forEach(p=>{html+=`<th>${p.heure_debut.substring(0,5)} - ${p.heure_fin.substring(0,5)}</th>`;});
+    html+='</tr></thead><tbody>';
+    joursData.forEach(jour=>{
+        html+=`<tr><td class="jour-cell">${jour}</td>`;
+        periodes.forEach(p=>{
+            const s=emploi.find(e=>e.jour===jour && e.id_periode===p.id_periode);
+            if(s) html+=`<td class="cell-seance"><div class="ligne"><strong>Matière:</strong> ${s.matiere}</div><div class="ligne"><strong>Prof:</strong> ${s.professeur}</div><div class="ligne"><strong>Salle:</strong> ${s.salle}</div></td>`;
+            else html+='<td class="empty">-</td>';
+        });
+        html+='</tr>';
+    });
+    html+='</tbody></table>';
+    document.getElementById('emploi-container').innerHTML=html;
+}
+
+function showError(msg){document.getElementById('error-container').innerHTML=`<div class="error">${msg}</div>`;}
+function clearError(){document.getElementById('error-container').innerHTML='';}
+function logout(){localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='../Login/index.html';}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    loadGroupes();
+    loadProfs();
+    loadEmploiData();
+
+    const groupeSelect = document.getElementById('id_groupe');
+    const profSelect = document.getElementById('id_professeur');
+
+    groupeSelect.addEventListener('change', () => {
+        if (groupeSelect.value) profSelect.value = '';
+    });
+    profSelect.addEventListener('change', () => {
+        if (profSelect.value) groupeSelect.value = '';
+    });
+});
+</script>
+
+<script src="admin-sidebar.js"></script>
+</body>
+</html>

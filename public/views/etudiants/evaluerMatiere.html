@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>supnum - Évaluer les Matières</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: var(--space-xs);
+        }
+        
+        .stat-card .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .stat-card.total { border-color: var(--primary); }
+        .stat-card.total .stat-value { color: var(--primary); }
+        
+        .stat-card.done { border-color: var(--success); }
+        .stat-card.done .stat-value { color: var(--success); }
+        
+        .stat-card.missed { border-color: var(--danger); }
+        .stat-card.missed .stat-value { color: var(--danger); }
+        
+        .stat-card.pending { border-color: var(--warning); }
+        .stat-card.pending .stat-value { color: var(--warning); }
+        
+        #seanceContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: var(--space-lg);
+        }
+        
+        .seance-card {
+            background: var(--bg-card);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .seance-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .seance-card.evaluated {
+            opacity: 0.75;
+        }
+        
+        .seance-card.effectuee {
+            border-color: var(--success);
+            background: linear-gradient(135deg, var(--bg-card) 0%, rgba(34, 197, 94, 0.05) 100%);
+        }
+        
+        .seance-card.ratee {
+            border-color: var(--danger);
+            background: linear-gradient(135deg, var(--bg-card) 0%, rgba(239, 68, 68, 0.05) 100%);
+        }
+        
+        .seance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: var(--space-md);
+        }
+        
+        .seance-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .badge-cm { background: #dbeafe; color: #1e40af; }
+        .badge-td { background: #fef3c7; color: #92400e; }
+        .badge-tp { background: #fce7f3; color: #9f1239; }
+        
+        .seance-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .seance-info {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+            margin-bottom: var(--space-md);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .info-line {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+        
+        .info-line .icon {
+            font-size: 1rem;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: var(--space-sm);
+            margin-top: var(--space-md);
+        }
+        
+        .btn-group button {
+            flex: 1;
+            padding: var(--space-md);
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-xs);
+        }
+        
+        .btn-done {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-done:hover {
+            background: #16a34a;
+            transform: scale(1.02);
+        }
+        
+        .btn-missed {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-missed:hover {
+            background: #dc2626;
+            transform: scale(1.02);
+        }
+        
+        .btn-group button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .evaluation-status {
+            margin-top: var(--space-md);
+            padding: var(--space-sm);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .status-effectuee {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-ratee {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: var(--space-xl);
+            color: var(--text-secondary);
+        }
+        
+        .empty {
+            text-align: center;
+            padding: var(--space-xl);
+            color: var(--text-secondary);
+            font-style: italic;
+            grid-column: 1/-1;
+        }
+        
+        .error {
+            background: var(--danger-light);
+            border-left: 4px solid var(--danger);
+            padding: var(--space-lg);
+            border-radius: var(--radius-md);
+            color: var(--danger);
+            margin-bottom: var(--space-xl);
+        }
+        
+        @media (max-width: 768px) {
+            #seanceContainer {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+                <span class="sidebar-title">supnum</span>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav">
+                <a href="student_dashboard.html" class="nav-item">
+                    <span class="icon">🏠</span>
+                    Accueil
+                </a>
+                <a href="emploi.html" class="nav-item">
+                    <span class="icon">📅</span>
+                    Mes emploi
+                </a>
+                <a href="evaluation.html" class="nav-item">
+                    <span class="icon">📈</span>
+                    Progression
+                </a>
+                <a href="evaluerMatiere.html" class="nav-item active" id="evaluerMatiereLink" style="display:none;">
+                    <span class="icon">✅</span>
+                    Evalier matier
+                </a>
+            </nav>
+            <div style="margin-top: auto; padding-top: var(--space-xl); border-top: 1px solid var(--border-light);">
+                <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Déconnexion</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <h1 class="page-title">Évaluation des Séances</h1>
+            <p class="page-subtitle" id="groupe-info">Chef de classe - Semaine active</p>
+            
+            <div id="error-container"></div>
+            
+            <div class="stats-container" id="stats-container" style="display: none;">
+                <div class="stat-card total">
+                    <div class="stat-value" id="stat-total">0</div>
+                    <div class="stat-label">Total Séances</div>
+                </div>
+                <div class="stat-card done">
+                    <div class="stat-value" id="stat-done">0</div>
+                    <div class="stat-label">Effectuées</div>
+                </div>
+                <div class="stat-card missed">
+                    <div class="stat-value" id="stat-missed">0</div>
+                    <div class="stat-label">Ratées</div>
+                </div>
+                <div class="stat-card pending">
+                    <div class="stat-value" id="stat-pending">0</div>
+                    <div class="stat-label">À évaluer</div>
+                </div>
+            </div>
+            
+            <div id="loading-container" class="loading">Chargement des séances...</div>
+            <div id="seanceContainer"></div>
+        </main>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const container = document.getElementById('seanceContainer');
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '../Login/index.html';
+        }
+
+        function showError(message) {
+            document.getElementById('loading-container').innerHTML = '';
+            document.getElementById('error-container').innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('error-container').innerHTML = '';
+        }
+
+        function setRoleUi() {
+            const nav = document.getElementById('sidebarNav');
+            if (!nav) return;
+
+            if (user.role === 'administrateur') {
+                nav.innerHTML = `
+                    <a href="../admin/admin.html" class="nav-item"><span class="icon">🏠</span>Accueil</a>
+                    <a href="../admin/gestionEmploi.html" class="nav-item"><span class="icon">📚</span>Emploi du temps</a>
+                    <a href="evaluation.html" class="nav-item"><span class="icon">📈</span>Progression</a>
+                `;
+                return;
+            }
+
+            if (user.role === 'professeur') {
+                nav.innerHTML = `
+                    <a href="../profs/prof_dashboard.html" class="nav-item"><span class="icon">🏠</span>Accueil</a>
+                    <a href="../profs/emploi.html" class="nav-item"><span class="icon">📅</span>Mon emploi</a>
+                    <a href="evaluation.html" class="nav-item"><span class="icon">📈</span>Progression</a>
+                `;
+                return;
+            }
+
+            nav.innerHTML = `
+                <a href="student_dashboard.html" class="nav-item"><span class="icon">🏠</span>Accueil</a>
+                <a href="emploi.html" class="nav-item"><span class="icon">📅</span>Mes emploi</a>
+                <a href="evaluation.html" class="nav-item"><span class="icon">📈</span>Progression</a>
+                <a href="evaluerMatiere.html" class="nav-item active" id="evaluerMatiereLink" style="display:none;"><span class="icon">✅</span>Evalier matier</a>
+            `;
+        }
+
+        async function checkIsChef() {
+            try {
+                const idEtudiant = user.id_etudiant || user.id;
+                if (!idEtudiant) return;
+
+                const groupsRes = await API.get('/groupes/all');
+                const allGroups = (groupsRes && groupsRes.data) ? groupsRes.data : [];
+                const isChef = allGroups.some(g => Number(g.id_chef) === Number(idEtudiant));
+
+                const evaluerLink = document.getElementById('evaluerMatiereLink');
+                if (evaluerLink && isChef) {
+                    evaluerLink.style.display = 'flex';
+                }
+            } catch (error) {
+                console.warn('Verification chef impossible:', error.message);
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        async function loadSeances() {
+            try {
+                if (!user.id_etudiant && !user.id) {
+                    window.location.href = '../Login/index.html';
+                    return;
+                }
+
+                const id_etudiant = user.id_etudiant || user.id;
+                
+                const result = await API.get(`/api/seances-evaluation/semaine/${id_etudiant}`);
+                
+                if (result.success && result.data) {
+                    const { seances, stats, nom_groupe } = result.data;
+                    
+                    // Afficher le nom du groupe
+                    document.getElementById('groupe-info').textContent = `Chef de classe - ${nom_groupe || 'Votre groupe'}`;
+                    
+                    // Afficher les statistiques
+                    displayStats(stats);
+                    
+                    // Afficher les séances
+                    displaySeances(seances);
+                } else {
+                    showError(result.message || 'Erreur lors du chargement des séances');
+                }
+                
+                document.getElementById('loading-container').innerHTML = '';
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError(error.message || 'Erreur lors du chargement des séances');
+            }
+        }
+
+        function displayStats(stats) {
+            if (!stats) return;
+            
+            document.getElementById('stat-total').textContent = stats.total_seances || 0;
+            document.getElementById('stat-done').textContent = stats.seances_effectuees || 0;
+            document.getElementById('stat-missed').textContent = stats.seances_ratees || 0;
+            document.getElementById('stat-pending').textContent = stats.seances_non_evaluees || 0;
+            
+            document.getElementById('stats-container').style.display = 'grid';
+        }
+
+        function displaySeances(seances) {
+            container.innerHTML = '';
+            
+            if (!seances || seances.length === 0) {
+                container.innerHTML = '<div class="empty">Aucune séance programmée pour cette semaine</div>';
+                return;
+            }
+            
+            seances.forEach(seance => {
+                const card = document.createElement('div');
+                card.className = `seance-card ${seance.status ? seance.status : ''}`;
+                
+                const badgeClass = seance.type_seance === 'CM' ? 'badge-cm' : seance.type_seance === 'TD' ? 'badge-td' : 'badge-tp';
+                
+                let statusHTML = '';
+                if (seance.status) {
+                    const statusText = seance.status === 'effectuee' ? '✅ Effectuée' : '❌ Ratée';
+                    const statusClass = seance.status === 'effectuee' ? 'status-effectuee' : 'status-ratee';
+                    const evaluationDate = seance.date_evaluation ? new Date(seance.date_evaluation).toLocaleString('fr-FR', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    }) : '';
+                    
+                    statusHTML = `
+                        <div class="evaluation-status ${statusClass}">
+                            ${statusText}
+                            ${evaluationDate ? `<br><small>Le ${evaluationDate}</small>` : ''}
+                        </div>
+                    `;
+                }
+                
+                card.innerHTML = `
+                    <div class="seance-header">
+                        <div>
+                            <div class="seance-title">${escapeHtml(seance.nom_matiere || seance.code_matiere)}</div>
+                            <span class="seance-badge ${badgeClass}">${seance.type_seance}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="seance-info">
+                        <div class="info-line">
+                            <span class="icon">📅</span>
+                            <span>${seance.jour} • ${seance.heure_debut?.substring(0,5)} - ${seance.heure_fin?.substring(0,5)}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="icon">👨‍🏫</span>
+                            <span>${escapeHtml(seance.nom_professeur || 'N/A')}</span>
+                        </div>
+                        <div class="info-line">
+                            <span class="icon">🚪</span>
+                            <span>Salle ${escapeHtml(seance.nom_salle || 'N/A')}</span>
+                        </div>
+                    </div>
+                    
+                    ${!seance.status ? `
+                        <div class="btn-group">
+                            <button class="btn-done" onclick="evaluateSeance(${seance.id_seance}, 'effectuee')">
+                                ✓ Effectuée
+                            </button>
+                            <button class="btn-missed" onclick="evaluateSeance(${seance.id_seance}, 'ratee')">
+                                ✗ Ratée
+                            </button>
+                        </div>
+                    ` : statusHTML}
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        async function evaluateSeance(id_seance, status) {
+            try {
+                const id_etudiant = user.id_etudiant || user.id;
+                
+                const result = await API.post('/api/seances-evaluation/evaluer', {
+                    id_seance,
+                    status,
+                    evaluee_par: id_etudiant
+                });
+                
+                if (result.success) {
+                    showToast(result.message || 'Séance évaluée avec succès', 'success');
+                    // Recharger les séances
+                    setTimeout(() => loadSeances(), 500);
+                } else {
+                    showToast(result.message || 'Erreur lors de l\'évaluation', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showToast(error.message || 'Erreur lors de l\'évaluation', 'error');
+            }
+        }
+
+        // Charger au démarrage
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!user.nom || (!user.id_etudiant && !user.id)) {
+                window.location.href = '../Login/index.html';
+                return;
+            }
+            setRoleUi();
+            checkIsChef();
+            loadSeances();
+        });
+    </script>
+</body>
+</html>

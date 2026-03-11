@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Gestion des Utilisateurs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+                <span class="sidebar-title">SupNum</span>
+            </div>
+            <nav class="sidebar-nav"></nav>
+            <div style="margin-top: auto; padding-top: var(--space-xl); border-top: 1px solid var(--border-light);">
+                <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Déconnexion</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <h1 class="page-title">Gestion des Utilisateurs</h1>
+            <p class="page-subtitle">Choisissez le type d'utilisateur à administrer</p>
+
+            <h2 class="section-title">Accès rapide</h2>
+            <div class="quick-access-grid">
+                <a href="student.html" class="quick-access-card">
+                    <span class="icon">🎓</span>
+                    <span>Étudiants</span>
+                </a>
+                <a href="prof.html" class="quick-access-card quick-access-card--warning">
+                    <span class="icon">👨‍🏫</span>
+                    <span>Professeurs</span>
+                </a>
+                <a href="administrateur.html" class="quick-access-card quick-access-card--success">
+                    <span class="icon">🛡️</span>
+                    <span>Administrateurs</span>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../Login/index.html';
+        }
+    </script>
+    <script src="admin-sidebar.js"></script>
+</body>
+</html>

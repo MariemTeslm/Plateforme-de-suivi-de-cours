@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SupNum - Ajouter une séance</title>
+<style>
+/* Styles simplifiés */
+.form-container { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin:20px auto; width: 90%; max-width:600px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+.form-group { display: flex; flex-direction: column; }
+.form-group label { margin-bottom: 5px; font-weight: 600; }
+.form-group input, .form-group select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+.button-group { display: flex; gap: 10px; margin-top: 20px; }
+.btn-submit { background: #007bff; color: #fff; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; flex: 1; }
+.btn-reset { background: #eee; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+.error { background: #f8d7da; color: #842029; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+.success { background: #d1e7dd; color: #0f5132; padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+@media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="form-container">
+<h1>Ajouter une séance</h1>
+<div id="message-container"></div>
+<form id="seanceForm" onsubmit="submitSeance(event)">
+<div class="form-row">
+<div class="form-group">
+<label for="id_groupe">Groupe *</label>
+<select id="id_groupe" name="id_groupe" required><option value="">-- Sélectionner --</option></select>
+</div>
+<div class="form-group">
+<label for="jour">Jour *</label>
+<select id="jour" name="jour" required>
+<option value="">-- Sélectionner --</option>
+<option>Lundi</option><option>Mardi</option><option>Mercredi</option><option>Jeudi</option><option>Vendredi</option><option>Samedi</option>
+</select>
+</div>
+</div>
+
+<div class="form-row">
+<div class="form-group">
+<label for="id_periode">Période *</label>
+<select id="id_periode" name="id_periode" required><option value="">-- Sélectionner --</option></select>
+</div>
+<div class="form-group">
+<label for="code_matiere">Matière *</label>
+<select id="code_matiere" name="code_matiere" required><option value="">-- Sélectionner --</option></select>
+</div>
+</div>
+
+<div class="form-row">
+<div class="form-group">
+<label for="id_professeur">Professeur *</label>
+<select id="id_professeur" name="id_professeur" required><option value="">-- Sélectionner --</option></select>
+</div>
+<div class="form-group">
+<label for="id_salle">Salle *</label>
+<select id="id_salle" name="id_salle" required><option value="">-- Sélectionner --</option></select>
+</div>
+</div>
+<div class="form-row">
+<div class="form-group">
+<label for="type_seance">Type de séance *</label>
+<select id="type_seance" name="type_seance" required>
+<option value="">-- Sélectionner --</option>
+<option value="CM">CM</option>
+<option value="TD">TD</option>
+<option value="TP">TP</option>
+</select>
+</div>
+<div class="form-group">
+    <label for="id_semaine">Semaine</label>
+    <select id="id_semaine" required>
+        <option value="">-- Sélectionner --</option>
+    </select>
+</div>
+</div>
+<div class="button-group">
+<button type="submit" class="btn-submit">Ajouter la séance</button>
+<button type="reset" class="btn-reset">Réinitialiser</button>
+</div>
+</form>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:4000/api/seance';
+
+// Charger les données pour les selects
+async function loadFormData() {
+    try {
+        const res = await fetch(`${API_BASE}/seance-data`);
+        const result = await res.json();
+        if(result.success){
+            const { groupes, profs, matieres, salles, periodes, semaines } = result.data; // ajouter semaines
+
+            // Groupes
+            groupes.forEach(g => { 
+                const opt = document.createElement('option'); 
+                opt.value = g.id_groupe; 
+                opt.textContent = g.nom; 
+                document.getElementById('id_groupe').appendChild(opt); 
+            });
+
+            // Professeurs
+            profs.forEach(p => { 
+                const opt = document.createElement('option'); 
+                opt.value = p.id_professeur; 
+                opt.textContent = p.nom; 
+                document.getElementById('id_professeur').appendChild(opt); 
+            });
+
+            // Matières
+            matieres.forEach(m => { 
+                const opt = document.createElement('option'); 
+                opt.value = m.code; 
+                opt.textContent = m.nom; 
+                document.getElementById('code_matiere').appendChild(opt); 
+            });
+
+            // Salles
+            salles.forEach(s => { 
+                const opt = document.createElement('option'); 
+                opt.value = s.id_salle; 
+                opt.textContent = s.nom_salle; 
+                document.getElementById('id_salle').appendChild(opt); 
+            });
+
+            // Périodes
+            periodes.forEach(p => { 
+                const opt = document.createElement('option'); 
+                opt.value = p.id_periode; 
+                opt.textContent = `${p.heure_debut.substring(0,5)} - ${p.heure_fin.substring(0,5)}`; 
+                document.getElementById('id_periode').appendChild(opt); 
+            });
+
+            // ⚡ Semaines
+            if(semaines){
+                const selectSemaine = document.getElementById('id_semaine');
+                selectSemaine.innerHTML = '<option value="">-- Sélectionner --</option>';
+                semaines.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    const start = new Date(s.date_debut).toLocaleDateString('fr-FR');
+                    const end = new Date(s.date_fin).toLocaleDateString('fr-FR');
+                    opt.textContent = `Semaine ${s.numSemaine} – du ${start} au ${end}`;
+                    selectSemaine.appendChild(opt);
+                    // Si active
+                    if(s.active === 1){
+                        selectSemaine.value = s.id;
+                    }
+                });
+            }
+
+        } else showMessage('Erreur : impossible de charger les données', 'error');
+    } catch(err){ 
+        console.error(err); 
+        showMessage('Erreur réseau : '+err.message,'error'); 
+    }
+}
+// Soumettre le formulaire
+async function submitSeance(e){
+    e.preventDefault();
+    const formData = {
+        id_groupe: document.getElementById('id_groupe').value,
+        jour: document.getElementById('jour').value,
+        id_periode: document.getElementById('id_periode').value,
+        code_matiere: document.getElementById('code_matiere').value,
+        id_professeur: document.getElementById('id_professeur').value,
+        id_salle: document.getElementById('id_salle').value,
+        type_seance: document.getElementById('type_seance').value,
+        id_semaine: document.getElementById('id_semaine').value
+    };
+    if(Object.values(formData).some(v=>!v)){ showMessage('Veuillez remplir tous les champs','error'); return; }
+
+    try{
+        const res = await fetch(`${API_BASE}/seance`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(formData) });
+        const result = await res.json();
+        if(result.success){ showMessage('Séance ajoutée avec succès !','success'); document.getElementById('seanceForm').reset(); }
+        else showMessage('Erreur : '+(result.message||'Impossible d\'ajouter la séance'),'error');
+    } catch(err){ console.error(err); showMessage('Erreur réseau : '+err.message,'error'); }
+}
+
+function showMessage(msg,type){ document.getElementById('message-container').innerHTML=`<div class="${type==='success'?'success':'error'}">${msg}</div>`; }
+
+document.addEventListener('DOMContentLoaded', loadFormData);
+</script>
+<script src="admin-sidebar.js"></script>
+</body>
+</html>

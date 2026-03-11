@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SupNum - Emploi du temps</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f7f8fa; margin:0; padding:0; }
+    .main-content { padding: 20px; max-width: 1200px; margin:auto; }
+    .titre-emploi { font-size: 1.5rem; font-weight: 700; margin-bottom: 20px; }
+    .form-box { background:#fff; padding:20px; border-radius:10px; margin-bottom:20px; max-width:400px; }
+    .form-box label { display:block; font-weight:600; margin-bottom:5px; }
+    .form-box select { width:100%; padding:8px; border-radius:5px; border:1px solid #ccc; }
+    .emploi-table { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    .emploi-table th, .emploi-table td { padding:10px; border:1px solid #ddd; vertical-align:top; text-align:left; }
+    .emploi-table th { background:#3b82f6; color:#fff; font-weight:600; }
+    .jour-cell { background:#3b82f6; color:#fff; font-weight:600; text-align:center; }
+    .cell-seance { font-size:0.9rem; }
+    .cell-seance .ligne { margin-bottom:5px; }
+    .empty { text-align:center; color:#888; font-style:italic; }
+    .error { background:#f8d7da; color:#842029; padding:10px; border-radius:5px; margin-bottom:20px; }
+</style>
+</head>
+<body>
+<div class="main-content">
+    <h1 class="titre-emploi">Emploi du temps</h1>
+    <div id="error-container"></div>
+    <div id="select-container" class="form-box" style="display:none;">
+        <label for="id_groupe">Sélectionner un groupe :</label>
+        <select id="id_groupe">
+            <option value="">-- Choisir un groupe --</option>
+        </select>
+    </div>
+    <div id="emploi-container"></div>
+</div>
+
+<script>
+function redirectToMaintainedSchedulePage() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!user || !user.role) {
+        window.location.href = '../Login/index.html';
+        return;
+    }
+
+    if (user.role === 'etudiant') {
+        window.location.replace('../etudiants/emploi.html');
+        return;
+    }
+
+    if (user.role === 'professeur') {
+        window.location.replace('../profs/emploi.html');
+        return;
+    }
+
+    // administrateur
+    window.location.replace('gestionEmploi.html');
+}
+
+document.addEventListener('DOMContentLoaded', redirectToMaintainedSchedulePage);
+</script>
+<script src="admin-sidebar.js"></script>
+</body>
+</html>

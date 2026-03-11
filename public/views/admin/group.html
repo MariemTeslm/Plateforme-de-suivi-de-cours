@@ -1,0 +1,107 @@
+<!-- frontend/group.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>supnum - Gestion des Groupes</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+                <span class="sidebar-title">SupNum</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin.html" class="nav-item active">
+                    <span class="icon">🏠</span>
+                    Accueil
+                </a>
+                <a href="gestionUtilisateur.html" class="nav-item">
+                    <span class="icon">👥</span>
+                    Utilisateur
+                </a>
+                
+                <a href="gestionsEtablissement.html" class="nav-item">
+                    <span class="icon">🏢</span>
+                    Etablissement
+                </a>
+                <a href="gestionEmploi.html" class="nav-item">
+                    <span class="icon">📚</span>
+                    Emploi du temps
+                </a>
+                
+                <a href="../evaluation/evaluation.html" class="nav-item">
+                    <span class="icon">📊</span>
+                    Évaluations
+                </a>
+               
+            </nav>
+            <div style="margin-top: auto; padding-top: var(--space-xl); border-top: 1px solid var(--border-light);">
+                <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Déconnexion</button>
+            </div>
+        </aside>
+
+    <main class="main-content">
+        <h1 class="page-title">Gestion des Groupes</h1>
+        <p class="page-subtitle">Structure des classes et chefs de groupe</p>
+
+        <form id="groupForm" style="margin-bottom:var(--space-2xl);">
+            <legend>Ajouter / Modifier un groupe</legend>
+            <div class="form-grid">
+                <div>
+                    <label for="nom">Nom du groupe</label>
+                    <input type="text" id="nom" name="nom" placeholder="Ex: DSI21" required>
+                </div>
+                <div>
+                    <label for="id_chef">Chef du groupe</label>
+                    <select id="id_chef" name="id_chef">
+                        <option value="">-- Sélectionner un chef --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="studentsSelect">Étudiants à affecter</label>
+                    <select id="studentsSelect" multiple size="6" style="width:100%; padding:6px;"></select>
+                    <button type="button" id="toggleAllStudents" class="btn btn-outline">Afficher tous les étudiants</button>
+                </div>
+
+                <div>
+                    <button type="submit" id="submitBtn" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" id="cancelEdit" class="btn btn-outline" style="display:none;" onclick="cancelGroupEdit()">Annuler</button>
+                </div>
+            </div>
+        </form>
+
+        <h3>Liste des Groupes</h3>
+        <div class="table-responsive">
+            <table id="groupsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom</th>
+                        <th>Chef</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<script src="../assets/js/api.js"></script>
+<script src="group.js"></script>
+<script>
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href='../Login/index.html';
+}
+</script>
+<script src="admin-sidebar.js"></script>
+</body>
+</html>

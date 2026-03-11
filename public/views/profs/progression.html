@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Progression Professeur</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .toolbar { display: flex; justify-content: space-between; gap: var(--space-md); align-items: center; margin-bottom: var(--space-lg); }
+        .toolbar select { min-width: 240px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg); }
+        .stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: var(--space-md); }
+        .stat .v { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+        .stat .l { color: var(--text-secondary); font-size: 0.86rem; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: var(--space-md); margin-bottom: var(--space-md); }
+        .bar { height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 8px; }
+        .bar > span { display: block; height: 100%; background: linear-gradient(90deg, #0ea5e9, #2563eb); }
+        .error { background: #fee2e2; color: #991b1b; border-left: 4px solid #dc2626; border-radius: 8px; padding: 12px; margin-bottom: var(--space-md); }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+                <span class="sidebar-title">supnum</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="emploi.html" class="nav-item"><span class="icon">📅</span>Mon Emploi</a>
+                <a href="progression.html" class="nav-item active"><span class="icon">📊</span>Progression</a>
+                <a href="prof_dashboard.html" class="nav-item"><span class="icon">🏠</span>Accueil</a>
+            </nav>
+            <div style="margin-top: auto; padding-top: var(--space-xl); border-top: 1px solid var(--border-light);">
+                <button onclick="logout()" class="btn btn-danger" style="width:100%;">Déconnexion</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <h1 class="page-title">Progression de mes matières</h1>
+            <p class="page-subtitle">Suivi par groupe de vos enseignements.</p>
+
+            <div id="errorBox"></div>
+
+            <div class="toolbar">
+                <div id="profInfo"></div>
+                <div>
+                    <label for="groupFilter"><strong>Groupe:</strong></label>
+                    <select id="groupFilter"></select>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat"><div class="v" id="sGlobal">0%</div><div class="l">Progression globale</div></div>
+                <div class="stat"><div class="v" id="sHours">0</div><div class="l">Heures réalisées</div></div>
+                <div class="stat"><div class="v" id="sTotal">0</div><div class="l">Heures totales</div></div>
+                <div class="stat"><div class="v" id="sDone">0</div><div class="l">Séances effectuées</div></div>
+            </div>
+
+            <div id="list"></div>
+        </main>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '../Login/index.html';
+        }
+
+        function showError(msg) {
+            document.getElementById('errorBox').innerHTML = `<div class="error">${msg}</div>`;
+        }
+
+        function setStats(stats) {
+            document.getElementById('sGlobal').textContent = `${stats.progression_globale || 0}%`;
+            document.getElementById('sHours').textContent = `${stats.heures_realisees || 0}`;
+            document.getElementById('sTotal').textContent = `${stats.total_heures || 0}`;
+            document.getElementById('sDone').textContent = `${stats.seances_effectuees || 0}`;
+        }
+
+        function renderGroups(groups, selected) {
+            const sel = document.getElementById('groupFilter');
+            sel.innerHTML = '<option value="">Tous les groupes</option>';
+            (groups || []).forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id_groupe;
+                opt.textContent = g.nom;
+                sel.appendChild(opt);
+            });
+            if (selected) sel.value = String(selected);
+        }
+
+        function renderList(matieres) {
+            const list = document.getElementById('list');
+            if (!matieres || matieres.length === 0) {
+                list.innerHTML = '<div class="card">Aucune matière trouvée pour ce filtre.</div>';
+                return;
+            }
+
+            list.innerHTML = matieres.map(m => {
+                const p = Math.max(0, Math.min(100, Number(m.progression) || 0));
+                return `
+                    <div class="card">
+                        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                            <strong>${m.code_matiere} - ${m.nom_matiere}</strong>
+                            <span>${m.nom_groupe || '-'}</span>
+                        </div>
+                        <div style="margin-top:8px;font-size:0.9rem;color:var(--text-secondary);">
+                            CM ${m.realise_CM}/${m.total_CM} • TD ${m.realise_TD}/${m.total_TD} • TP ${m.realise_TP}/${m.total_TP}
+                        </div>
+                        <div class="bar"><span style="width:${p}%"></span></div>
+                        <div style="margin-top:6px;font-weight:700;">${p}%</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadData(idGroupe = '') {
+            try {
+                const q = new URLSearchParams({ role: 'professeur', id_user: String(user.id) });
+                if (idGroupe) q.set('id_groupe', String(idGroupe));
+                const result = await API.get(`/api/progression/dashboard?${q.toString()}`);
+                if (!result.success) {
+                    showError(result.message || 'Erreur de chargement');
+                    return;
+                }
+                document.getElementById('errorBox').innerHTML = '';
+                renderGroups(result.data.groups || [], result.data.selected_group);
+                setStats(result.data.stats || {});
+                renderList(result.data.matieres || []);
+            } catch (e) {
+                showError(e.message || 'Erreur serveur');
+            }
+        }
+
+        document.getElementById('groupFilter').addEventListener('change', (e) => {
+            loadData(e.target.value || '');
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!user.nom || user.role !== 'professeur') {
+                window.location.href = '../Login/index.html';
+                return;
+            }
+            document.getElementById('profInfo').textContent = `Professeur: ${user.nom}`;
+            loadData();
+        });
+    </script>
+<script src="prof-sidebar.js"></script>
+</body>
+</html>

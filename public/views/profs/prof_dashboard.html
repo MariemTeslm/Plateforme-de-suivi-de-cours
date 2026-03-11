@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Espace Professeur</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+                <span class="sidebar-title">supnum</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="emploi.html" class="nav-item">
+                    <span class="icon">📅</span>
+                    Mon Emploi
+                </a>
+                <a href="progression.html" class="nav-item">
+                    <span class="icon">📊</span>
+                    Progression
+                </a>
+                <a href="prof_dashboard.html" class="nav-item active">
+                    <span class="icon">🏠</span>
+                    Accueil
+                </a>
+            </nav>
+            <div style="margin-top: auto; padding-top: var(--space-xl); border-top: 1px solid var(--border-light);">
+                <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Déconnexion</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <h1 class="page-title" id="welcome-title">Bienvenue, Professeur</h1>
+            <p class="page-subtitle">Gérez vos cours et suivez vos étudiants avec efficacité.</p>
+
+            <div class="stat-seances">
+                <div class="icon">📋</div>
+                <div>
+                    <div class="stat-value" id="seances-count">--</div>
+                    <div class="stat-label">Séances cette semaine</div>
+                </div>
+            </div>
+
+            <h2 class="section-title">Accès rapide</h2>
+            <div class="quick-access-grid">
+                <a href="emploi.html" class="quick-access-card">
+                    <div class="icon">📅</div>
+                    <h3>Mon Emploi</h3>
+                    <p>Consultez vos horaires</p>
+                </a>
+                <a href="progression.html" class="quick-access-card">
+                    <div class="icon">📊</div>
+                    <h3>Progression</h3>
+                    <p>Par matière et par groupe</p>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '../Login/index.html';
+        }
+
+        async function loadSeancesCount() {
+            try {
+                const emploiRes = await API.get(`/api/emploi/data?id_professeur=${user.id}`);
+                const allSeances = emploiRes?.data?.emploi || [];
+                const count = allSeances.length;
+                document.getElementById('seances-count').textContent = count;
+            } catch (e) {
+                document.getElementById('seances-count').textContent = '0';
+            }
+        }
+
+        async function initDashboard() {
+            if (!user.nom) { window.location.href = '../Login/index.html'; return; }
+            const title = document.getElementById('welcome-title');
+            if (title) title.textContent = 'Bienvenue, ' + user.nom;
+            loadSeancesCount();
+        }
+
+        initDashboard();
+    </script>
+<script src="prof-sidebar.js"></script>
+</body>
+</html>

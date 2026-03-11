@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Mon Emploi du temps</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .emploi-table { width: 100%; border-collapse: collapse; margin-top: var(--space-xl); background: var(--bg-card); box-shadow: var(--shadow-md); border-radius: var(--radius-lg); overflow: hidden; }
+        .emploi-table th { background: var(--primary); color: white; padding: var(--space-md); font-weight: 600; text-align: left; }
+        .emploi-table td { border: 1px solid var(--border); padding: var(--space-md); vertical-align: top; }
+        .emploi-table tr:hover td { background: var(--primary-light); }
+        .jour-cell { background: var(--primary); color: white; font-weight: 600; text-align: center; width: 120px; }
+        .cell-seance { font-size: 0.9rem; line-height: 1.6; }
+        .cell-seance .ligne { margin-bottom: var(--space-sm); }
+        .cell-seance strong { color: var(--primary); display: inline-block; min-width: 90px; }
+        
+        .titre-emploi { font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-top: var(--space-xl); margin-bottom: var(--space-lg); }
+        .loading { text-align: center; padding: var(--space-xl); color: var(--text-secondary); }
+        .error { background: var(--danger-light); border-left: 4px solid var(--danger); padding: var(--space-lg); border-radius: var(--radius-md); color: var(--danger); margin-bottom: var(--space-xl); }
+        .empty { text-align: center; padding: var(--space-xl); color: var(--text-secondary); font-style: italic; }
+        
+        .group-selector-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        #group-select {
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        
+        #group-select:hover {
+            border-color: var(--primary);
+        }
+        
+        #group-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+                <span class="sidebar-title">supnum</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="emploi.html" class="nav-item active">
+                    <span class="icon">📅</span>
+                    Mon Emploi
+                </a>
+                <a href="student_dashboard.html" class="nav-item">
+                    <span class="icon">🏠</span>
+                    Accueil
+                </a>
+                <a href="../evaluation/evaluation.html" class="nav-item">
+                    <span class="icon">📊</span>
+                    Évaluations
+                </a>
+            </nav>
+            <div style="margin-top: auto; padding-top: var(--space-xl); border-top: 1px solid var(--border-light);">
+                <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Déconnexion</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <h1 class="page-title">Mon Emploi du temps</h1>
+            
+            <div id="group-selector-container" style="margin-bottom: var(--space-xl); display: none;" class="group-selector-box">
+                <label for="group-select" style="display: block; margin-bottom: var(--space-sm); font-weight: 600; color: var(--text-main);">
+                    📚 Sélectionner un groupe :
+                </label>
+                <select id="group-select" style="padding: var(--space-md); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 1rem; min-width: 250px; width: 100%; max-width: 400px; background: var(--bg-card);">
+                    <option value="">Chargement...</option>
+                </select>
+            </div>
+            
+            <div id="error-container"></div>
+            
+            <div id="loading-container" class="loading">Chargement de votre emploi du temps...</div>
+            <div id="emploi-container"></div>
+        </main>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        let currentGroups = [];
+        let currentUser = null;
+
+        // Charger les groupes de l'étudiant
+        async function loadStudentGroups() {
+            try {
+                const userStr = localStorage.getItem('user');
+                if (!userStr) {
+                    window.location.href = '../Login/index.html';
+                    return null;
+                }
+
+                currentUser = JSON.parse(userStr);
+                const id_etudiant = currentUser.id_etudiant || currentUser.id;
+
+                if (!id_etudiant) {
+                    showError('Erreur : ID étudiant introuvable');
+                    return null;
+                }
+
+                const result = await API.get(`/students/groups/${id_etudiant}`);
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    currentGroups = result.data;
+                    
+                    // Si plusieurs groupes, afficher le sélecteur
+                    if (currentGroups.length > 1) {
+                        displayGroupSelector();
+                        return null; // Attendre la sélection
+                    } else {
+                        // Un seul groupe, le charger directement
+                        return currentGroups[0].id_groupe;
+                    }
+                } else {
+                    showError('Erreur : Aucun groupe trouvé pour cet étudiant');
+                    return null;
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur lors de la récupération des groupes');
+                return null;
+            }
+        }
+
+        // Afficher le sélecteur de groupes
+        function displayGroupSelector() {
+            const container = document.getElementById('group-selector-container');
+            const select = document.getElementById('group-select');
+            
+            // Remplir le sélecteur
+            select.innerHTML = '<option value="">-- Choisir un groupe --</option>';
+            currentGroups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id_groupe;
+                option.textContent = group.nom;
+                select.appendChild(option);
+            });
+
+            // Afficher le conteneur
+            container.style.display = 'block';
+
+            // Gérer le changement de groupe
+            select.addEventListener('change', async (e) => {
+                const id_groupe = e.target.value;
+                if (id_groupe) {
+                    await loadEmploiForGroup(id_groupe);
+                }
+            });
+
+            document.getElementById('loading-container').innerHTML = '';
+        }
+
+        // Charger l'emploi du temps pour un groupe spécifique
+        async function loadEmploiForGroup(id_groupe) {
+            try {
+                document.getElementById('loading-container').innerHTML = '<div class="loading">Chargement...</div>';
+                document.getElementById('emploi-container').innerHTML = '';
+                clearError();
+
+                const result = await API.get(`/api/emploi/data?id_groupe=${id_groupe}`);
+
+                if (result.success && result.data) {
+                    const nomEtudiant = currentUser.nom || currentUser.name || 'Utilisateur';
+                    renderEmploiTable(result.data, nomEtudiant);
+                } else {
+                    showError('Erreur : ' + (result.message || 'Impossible de charger l\'emploi'));
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur réseau : ' + error.message);
+            }
+        }
+
+        // Charger l'emploi du temps au démarrage
+        async function loadEmploiData() {
+            const id_groupe = await loadStudentGroups();
+            
+            // Si un seul groupe, charger directement
+            if (id_groupe) {
+                await loadEmploiForGroup(id_groupe);
+            }
+        }
+
+        // Rendre le tableau d'emploi du temps
+        function renderEmploiTable(data, nomEtudiant) {
+            const { periodes, emploi, jours: joursData, nomGroupe } = data;
+
+            let html = `<h2 class="titre-emploi">Emploi du temps - ${nomGroupe || 'Votre groupe'}</h2>`;
+            html += `<table class="emploi-table">
+                <thead>
+                    <tr>
+                        <th>Jour</th>`;
+            
+            periodes.forEach(p => {
+                const debut = p.heure_debut.substring(0, 5);
+                const fin = p.heure_fin.substring(0, 5);
+                html += `<th>${debut} - ${fin}</th>`;
+            });
+            
+            html += `</tr></thead><tbody>`;
+
+            joursData.forEach(jour => {
+                html += `<tr><td class="jour-cell">${jour}</td>`;
+                
+                periodes.forEach(periode => {
+                    const seance = emploi.find(s => s.jour === jour && s.id_periode === periode.id_periode);
+                    
+                    if (seance) {
+                        html += `<td>
+                            <div class="cell-seance">
+                                <div class="ligne"><strong>Matière :</strong> ${escapeHtml(seance.matiere)}</div>
+                                <div class="ligne"><strong>Professeur :</strong> ${escapeHtml(seance.professeur)}</div>
+                                <div class="ligne"><strong>Salle :</strong> ${escapeHtml(seance.salle)}</div>
+                            </div>
+                        </td>`;
+                    } else {
+                        html += `<td class="empty">-</td>`;
+                    }
+                });
+                
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            
+            document.getElementById('loading-container').innerHTML = '';
+            document.getElementById('emploi-container').innerHTML = html;
+            clearError();
+        }
+
+        // Utilitaires
+        function showError(message) {
+            document.getElementById('loading-container').innerHTML = '';
+            document.getElementById('error-container').innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('error-container').innerHTML = '';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../Login/index.html';
+        }
+
+        // Charger au démarrage
+        document.addEventListener('DOMContentLoaded', loadEmploiData);
+    </script>
+<script src="student-sidebar.js"></script>
+</body>
+</html>

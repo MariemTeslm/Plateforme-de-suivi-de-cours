@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Connexion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="login-compact.css">
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card-new">
+            <div class="login-logo-wrap">
+                <img src="../assets/images/logo.jpeg" alt="supnum">
+                <h1>SupNum</h1>
+                <p>Système de suivi des cours</p>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <legend>Connexion</legend>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="nom@universite.edu" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-submit">Se connecter</button>
+                <p class="login-forgot">
+                    <a href="forgot-password.html">Mot de passe oublié ?</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showToast('Veuillez remplir tous les champs', 'warning');
+                return;
+            }
+            
+            const submitBtn = this.querySelector('.btn-submit');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Connexion en cours...';
+
+            try {
+                const result = await API.post('/auth/login', { email, password });
+
+                if (result.success) {
+                    localStorage.setItem('token', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    showToast('Connexion réussie !', 'success');
+
+                    const role = result.user.role;
+                    setTimeout(() => {
+                        if (role === 'administrateur') {
+                            window.location.href = '../admin/admin.html';
+                        } else if (role === 'etudiant') {
+                            window.location.href = '../etudiants/student_dashboard.html';
+                        } else if (role === 'professeur') {
+                            window.location.href = '../profs/prof_dashboard.html';
+                        }
+                    }, 500);
+                } else {
+                    showToast(result.message || 'Erreur de connexion', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            } catch (error) {
+                showToast(error.message || 'Connexion échouée. Réessayez.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    </script>
+</body>
+</html>

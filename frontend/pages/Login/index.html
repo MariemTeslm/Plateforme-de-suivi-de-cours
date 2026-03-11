@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Connexion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: auto; }
+        .login-page {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: #ffffff;
+            overflow: auto;
+        }
+        .login-card-new {
+            width: 100%;
+            max-width: 360px;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 28px 24px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+        .login-logo-wrap {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .login-logo-wrap img {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e2e8f0;
+        }
+        .login-logo-wrap h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 8px 0 2px;
+        }
+        .login-logo-wrap p {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+        .login-form legend {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .login-form .form-group {
+            margin-bottom: 12px;
+        }
+        .login-form label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 4px;
+        }
+        .login-form input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .login-form input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        .login-form .btn-submit {
+            width: 100%;
+            padding: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 8px;
+            margin-top: 4px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .login-form .btn-submit:hover {
+            background: var(--primary-hover);
+        }
+        .login-forgot {
+            text-align: center;
+            margin-top: 12px;
+        }
+        .login-forgot a {
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card-new">
+            <div class="login-logo-wrap">
+                <img src="../../assets/images/logo.jpeg" alt="supnum">
+                <h1>supnum</h1>
+                <p>Système de suivi des cours</p>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <legend>Connexion</legend>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="nom@universite.edu" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-submit">Se connecter</button>
+                <p class="login-forgot">
+                    <a href="forgot_password.php">Mot de passe oublié ?</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script src="../../assets/js/api.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const result = await API.post('/auth/login', { email, password });
+
+                if (result.success) {
+                    localStorage.setItem('token', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+
+                    const role = result.user.role;
+                    if (role === 'administrateur') {
+                        window.location.href = '../admin/admin.html';
+                    } else if (role === 'etudiant') {
+                        window.location.href = '../students/student_dashboard.html';
+                    } else if (role === 'professeur') {
+                        window.location.href = '../profs/prof_dashboard.html';
+                    }
+                }
+            } catch (error) {
+                // Géré par API.js
+            }
+        });
+    </script>
+</body>
+</html>

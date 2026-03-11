@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Espace Professeur</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .stat-seances {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-seances .icon { font-size: 2.5rem; }
+        .stat-seances .stat-value { font-size: 1.75rem; font-weight: 800; color: var(--info); }
+        .stat-seances .stat-label { font-size: 0.9rem; color: var(--text-secondary); }
+        .quick-access-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-md); }
+        .quick-access-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all var(--transition-base);
+        }
+        .quick-access-card:hover { border-color: var(--info); transform: translateY(-4px); box-shadow: var(--shadow-md); }
+        .quick-access-card .icon { font-size: 2rem; margin-bottom: var(--space-sm); }
+        .quick-access-card h3 { font-size: 1rem; margin: 0; color: var(--info); }
+        .quick-access-card p { font-size: 0.8rem; margin: 4px 0 0; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+                <span class="sidebar-title">supnum</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="../tableaux/tableaux.html" class="nav-item">
+                    <span class="icon">📅</span>
+                    Mon Emploi
+                </a>
+                <a href="progression.html" class="nav-item">
+                    <span class="icon">📊</span>
+                    Progression
+                </a>
+                <a href="prof_dashboard.html" class="nav-item active">
+                    <span class="icon">🏠</span>
+                    Accueil
+                </a>
+            </nav>
+            <div style="margin-top: auto; padding-top: var(--space-xl); border-top: 1px solid var(--border-light);">
+                <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Déconnexion</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <h1 class="page-title" id="welcome-title">Bienvenue, Professeur</h1>
+            <p class="page-subtitle">Gérez vos cours et suivez vos étudiants avec efficacité.</p>
+
+            <div class="stat-seances">
+                <div class="icon">📋</div>
+                <div>
+                    <div class="stat-value" id="seances-count">--</div>
+                    <div class="stat-label">Séances cette semaine</div>
+                </div>
+            </div>
+
+            <h2 class="section-title">Accès rapide</h2>
+            <div class="quick-access-grid">
+                <a href="../tableaux/tableaux.html" class="quick-access-card">
+                    <div class="icon">📅</div>
+                    <h3>Mon Emploi</h3>
+                    <p>Consultez vos horaires</p>
+                </a>
+                <a href="progression.html" class="quick-access-card">
+                    <div class="icon">📊</div>
+                    <h3>Progression</h3>
+                    <p>Suivi des cours</p>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script src="../../assets/js/api.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '../Login/index.html';
+        }
+
+        async function loadSeancesCount() {
+            try {
+                const weekRes = await API.get('/semaines/active');
+                const activeWeek = weekRes.data;
+                if (!activeWeek) { document.getElementById('seances-count').textContent = '0'; return; }
+
+                const seancesRes = await API.get(`/tableaux/all?id_semaine=${activeWeek.id}`);
+                const allSeances = seancesRes.data || [];
+
+                const count = user.nom
+                    ? allSeances.filter(s => s.nom_professeur === user.nom).length
+                    : allSeances.length;
+                document.getElementById('seances-count').textContent = count;
+            } catch (e) {
+                document.getElementById('seances-count').textContent = '0';
+            }
+        }
+
+        async function initDashboard() {
+            if (!user.nom) { window.location.href = '../Login/index.html'; return; }
+            const title = document.getElementById('welcome-title');
+            if (title) title.textContent = 'Bienvenue, ' + user.nom;
+            loadSeancesCount();
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>

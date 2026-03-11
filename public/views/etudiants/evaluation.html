@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>supnum - Progression des Matieres</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+.dashboard-top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  align-items: end;
+}
+.filter-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.filter-wrap select {
+  min-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+.stat-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+.stat-val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+.stat-lbl {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: var(--space-lg);
+}
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-md);
+}
+.panel h3 {
+  margin: 0 0 var(--space-md);
+}
+.chart-box {
+  height: 250px;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 0.92rem;
+}
+.progress-pill {
+  display: inline-block;
+  min-width: 58px;
+  text-align: center;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 10px;
+  color: white;
+}
+.p-high { background: #16a34a; }
+.p-mid { background: #d97706; }
+.p-low { background: #dc2626; }
+.note {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left: 4px solid #dc2626;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: var(--space-md);
+}
+@media (max-width: 980px) {
+  .layout-grid { grid-template-columns: 1fr; }
+  .dashboard-top { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+      <span class="sidebar-title">supnum</span>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <a href="evaluation.html" class="nav-item active">
+        <span class="icon">📈</span>
+        Progression
+      </a>
+      <a href="evaluerMatiere.html" class="nav-item" id="evaluerMatiereLink" style="display:none;">
+        <span class="icon">✅</span>
+        Evaluer Matieres
+      </a>
+      <a href="../etudiants/student_dashboard.html" class="nav-item" id="backHomeLink">
+        <span class="icon">🏠</span>
+        Accueil
+      </a>
+    </nav>
+    <button onclick="logout()" style="margin-top:auto;padding:12px;border:none;border-radius:8px;background:var(--danger);color:white;cursor:pointer;width:100%;">Deconnexion</button>
+  </aside>
+
+  <main class="main-content">
+    <h1 class="page-title">Suivi de progression</h1>
+    <p id="subtitle" class="note">Visualisez l'avancement des matieres par groupe</p>
+
+    <div id="errorBox"></div>
+
+    <div class="dashboard-top">
+      <div class="note" id="roleBadge"></div>
+      <div class="filter-wrap">
+        <label for="groupFilter"><strong>Groupe:</strong></label>
+        <select id="groupFilter"></select>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-box"><div class="stat-val" id="stGlobal">0%</div><div class="stat-lbl">Progression globale</div></div>
+      <div class="stat-box"><div class="stat-val" id="stDone">0</div><div class="stat-lbl">Heures realisees</div></div>
+      <div class="stat-box"><div class="stat-val" id="stTotal">0</div><div class="stat-lbl">Heures totales</div></div>
+      <div class="stat-box"><div class="stat-val" id="stPlanned">0</div><div class="stat-lbl">Seances planifiees (semaine)</div></div>
+      <div class="stat-box"><div class="stat-val" id="stEval">0</div><div class="stat-lbl">Seances effectuees (semaine)</div></div>
+      <div class="stat-box"><div class="stat-val" id="stMissed">0</div><div class="stat-lbl">Seances ratees (semaine)</div></div>
+    </div>
+
+    <div class="layout-grid">
+      <section class="panel">
+        <h3>Diagramme de progression</h3>
+        <div class="chart-box">
+          <canvas id="progressChart"></canvas>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Progression par matiere</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Matiere</th>
+                <th>Groupe</th>
+                <th>Realise / Total</th>
+                <th>Progression</th>
+              </tr>
+            </thead>
+            <tbody id="matiereRows">
+              <tr><td colspan="4" class="note">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="../assets/js/api.js"></script>
+<script>
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+const role = user.role;
+const userId = user.id || user.id_etudiant || user.id_professeur || user.id_admin;
+let chart = null;
+let currentGroups = [];
+
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.location.href = '../Login/index.html';
+}
+
+function showError(msg) {
+  document.getElementById('errorBox').innerHTML = `<div class="error">${msg}</div>`;
+}
+
+function clearError() {
+  document.getElementById('errorBox').innerHTML = '';
+}
+
+function setRoleUi() {
+  const roleText = role === 'administrateur' ? 'Administrateur' : role === 'professeur' ? 'Professeur' : 'Etudiant';
+  document.getElementById('roleBadge').textContent = `Connecte en tant que: ${roleText} (${user.nom || '-'})`;
+
+  const nav = document.getElementById('sidebarNav');
+  if (!nav) return;
+
+  if (role === 'administrateur') {
+    nav.innerHTML = `
+      <a href="../admin/admin.html" class="nav-item"><span class="icon">🏠</span>Accueil</a>
+      <a href="../admin/gestionEmploi.html" class="nav-item"><span class="icon">📚</span>Emploi du temps</a>
+      <a href="evaluation.html" class="nav-item active"><span class="icon">📈</span>Progression</a>
+    `;
+    return;
+  }
+
+  if (role === 'professeur') {
+    nav.innerHTML = `
+      <a href="../profs/prof_dashboard.html" class="nav-item"><span class="icon">🏠</span>Accueil</a>
+      <a href="../profs/emploi.html" class="nav-item"><span class="icon">📅</span>Mon emploi</a>
+      <a href="evaluation.html" class="nav-item active"><span class="icon">📈</span>Progression</a>
+    `;
+    return;
+  }
+
+  nav.innerHTML = `
+    <a href="../etudiants/student_dashboard.html" class="nav-item"><span class="icon">🏠</span>Accueil</a>
+    <a href="../etudiants/emploi.html" class="nav-item"><span class="icon">📅</span>Mes emploi</a>
+    <a href="evaluation.html" class="nav-item active"><span class="icon">📈</span>Progression</a>
+    <a href="evaluerMatiere.html" class="nav-item" id="evaluerMatiereLink" style="display:none;"><span class="icon">✅</span>Evalier matier</a>
+  `;
+
+  // Bouton evaluer visible seulement pour etudiant chef
+  checkIsChef();
+}
+
+async function checkIsChef() {
+  try {
+    const idEtudiant = user.id_etudiant || user.id;
+    if (!idEtudiant) return;
+    const groupsRes = await API.get('/groupes/all');
+    const allGroups = (groupsRes && groupsRes.data) ? groupsRes.data : [];
+    const isChef = allGroups.some(g => Number(g.id_chef) === Number(idEtudiant));
+    if (isChef) {
+      document.getElementById('evaluerMatiereLink').style.display = 'flex';
+    }
+  } catch (_) {
+    // Non bloquant
+  }
+}
+
+function renderGroupFilter(groups, selected) {
+  currentGroups = groups || [];
+  const sel = document.getElementById('groupFilter');
+  sel.innerHTML = '';
+
+  const all = document.createElement('option');
+  all.value = '';
+  all.textContent = 'Tous les groupes';
+  sel.appendChild(all);
+
+  currentGroups.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.id_groupe;
+    opt.textContent = g.nom;
+    sel.appendChild(opt);
+  });
+
+  if (selected) sel.value = String(selected);
+}
+
+function colorClass(progress) {
+  if (progress >= 70) return 'p-high';
+  if (progress >= 40) return 'p-mid';
+  return 'p-low';
+}
+
+function renderRows(matieres) {
+  const body = document.getElementById('matiereRows');
+  if (!matieres || matieres.length === 0) {
+    body.innerHTML = '<tr><td colspan="4" class="note">Aucune progression disponible</td></tr>';
+    return;
+  }
+
+  body.innerHTML = matieres.map(m => `
+    <tr>
+      <td>${m.code_matiere} - ${m.nom_matiere}</td>
+      <td>${m.nom_groupe || '-'}</td>
+      <td>${m.realise} / ${m.total}</td>
+      <td><span class="progress-pill ${colorClass(m.progression)}">${m.progression}%</span></td>
+    </tr>
+  `).join('');
+}
+
+function renderChart(matieres) {
+  const labels = matieres.map(m => `${m.code_matiere}`);
+  const values = matieres.map(m => m.progression);
+
+  const ctx = document.getElementById('progressChart').getContext('2d');
+  if (chart) chart.destroy();
+
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Progression (%)',
+        data: values,
+        borderWidth: 1,
+        backgroundColor: values.map(v => v >= 70 ? 'rgba(22,163,74,0.7)' : v >= 40 ? 'rgba(217,119,6,0.7)' : 'rgba(220,38,38,0.7)')
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          ticks: {
+            autoSkip: true,
+            maxRotation: 0,
+            minRotation: 0,
+            maxTicksLimit: 8
+          },
+          grid: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          max: 100
+        }
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+function renderStats(stats) {
+  document.getElementById('stGlobal').textContent = `${stats.progression_globale || 0}%`;
+  document.getElementById('stDone').textContent = String(stats.heures_realisees || 0);
+  document.getElementById('stTotal').textContent = String(stats.total_heures || 0);
+  document.getElementById('stPlanned').textContent = String(stats.seances_planifiees || 0);
+  document.getElementById('stEval').textContent = String(stats.seances_effectuees || 0);
+  document.getElementById('stMissed').textContent = String(stats.seances_ratees || 0);
+}
+
+async function loadDashboard(idGroupe = '') {
+  clearError();
+  try {
+    const q = new URLSearchParams({ role, id_user: String(userId) });
+    if (idGroupe) q.set('id_groupe', String(idGroupe));
+
+    const result = await API.get(`/api/progression/dashboard?${q.toString()}`);
+    if (!result.success) {
+      showError(result.message || 'Erreur de chargement');
+      return;
+    }
+
+    const payload = result.data || {};
+    renderGroupFilter(payload.groups || [], payload.selected_group);
+    renderRows(payload.matieres || []);
+    renderChart(payload.matieres || []);
+    renderStats(payload.stats || {});
+  } catch (err) {
+    showError(err.message || 'Erreur serveur');
+  }
+}
+
+document.getElementById('groupFilter').addEventListener('change', (e) => {
+  loadDashboard(e.target.value || '');
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!user || !role || !userId) {
+    window.location.href = '../Login/index.html';
+    return;
+  }
+  setRoleUi();
+  loadDashboard();
+});
+</script>
+</body>
+</html>

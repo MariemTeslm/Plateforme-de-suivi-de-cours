@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Emploi du temps du professeur</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .form-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xl);
+            max-width: 400px;
+        }
+        .form-box label { display: block; margin-bottom: var(--space-sm); font-weight: 600; color: var(--text-main); }
+        .form-box select { width: 100%; padding: var(--space-md); border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.95rem; margin-bottom: var(--space-md); }
+        .form-box button { width: 100%; padding: var(--space-md); background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all var(--transition-base); }
+        .form-box button:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        
+        .emploi-table { width: 100%; border-collapse: collapse; margin-top: var(--space-xl); background: var(--bg-card); box-shadow: var(--shadow-md); border-radius: var(--radius-lg); overflow: hidden; }
+        .emploi-table th { background: var(--primary); color: white; padding: var(--space-md); font-weight: 600; text-align: left; }
+        .emploi-table td { border: 1px solid var(--border); padding: var(--space-md); vertical-align: top; }
+        .emploi-table tr:hover td { background: var(--primary-light); }
+        .jour-cell { background: var(--primary); color: white; font-weight: 600; text-align: center; width: 120px; }
+        .cell-seance { font-size: 0.9rem; line-height: 1.6; }
+        .cell-seance .ligne { margin-bottom: var(--space-sm); }
+        .cell-seance strong { color: var(--primary); display: inline-block; min-width: 70px; }
+        
+        .titre-emploi { font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-top: var(--space-xl); margin-bottom: var(--space-lg); }
+        .error { background: var(--danger-light); border-left: 4px solid var(--danger); padding: var(--space-lg); border-radius: var(--radius-md); color: var(--danger); margin-bottom: var(--space-xl); }
+        .empty { text-align: center; padding: var(--space-xl); color: var(--text-secondary); font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.jpeg" alt="supnum" class="sidebar-logo">
+                <span class="sidebar-title">SupNum</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="admin.html" class="nav-item">
+                    <span class="icon">🏠</span>
+                    Accueil
+                </a>
+                <a href="gestionUtilisateur.html" class="nav-item">
+                    <span class="icon">👥</span>
+                    Utilisateur
+                </a>
+                <a href="gestionsEtablissement.html" class="nav-item">
+                    <span class="icon">🏢</span>
+                    Etablissement
+                </a>
+                <a href="gestionEmploi.html" class="nav-item active">
+                    <span class="icon">📚</span>
+                    Emploi du temps
+                </a>
+                <a href="../evaluation/evaluation.html" class="nav-item">
+                    <span class="icon">📊</span>
+                    Évaluations
+                </a>
+            </nav>
+            <div style="margin-top: auto; padding-top: var(--space-xl); border-top: 1px solid var(--border-light);">
+                <button onclick="logout()" class="btn btn-danger" style="width: 100%;">Déconnexion</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <h1 class="page-title">Emploi du temps - Professeur</h1>
+            
+            <div id="error-container"></div>
+            
+            <div class="form-box" id="form-container">
+                <label for="id_professeur">Choisir un professeur :</label>
+                <select id="id_professeur" name="id_professeur">
+                    <option value="">-- Sélectionner --</option>
+                </select>
+                <button type="button" onclick="loadEmploiProfesseur()">Afficher l'emploi</button>
+            </div>
+
+            <div id="emploi-container"></div>
+        </main>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        let allProfesseurs = [];
+
+        // Charger les professeurs au démarrage
+        async function loadProfesseurs() {
+            try {
+                const response = await fetch('/api/emploi/professeurs');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    allProfesseurs = result.data;
+                    const select = document.getElementById('id_professeur');
+                    select.innerHTML = '<option value="">-- Sélectionner --</option>';
+                    
+                    result.data.forEach(prof => {
+                        const option = document.createElement('option');
+                        option.value = prof.id_professeur;
+                        option.textContent = prof.nom;
+                        select.appendChild(option);
+                    });
+                } else {
+                    showError('Erreur : Impossible de charger les professeurs');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur réseau : ' + error.message);
+            }
+        }
+
+        // Charger l'emploi du temps du professeur
+        async function loadEmploiProfesseur() {
+            const id_professeur = document.getElementById('id_professeur').value;
+            
+            if (!id_professeur) {
+                showError('Veuillez sélectionner un professeur');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/emploi/professeur?id_professeur=${id_professeur}`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    renderEmploiTable(result.data);
+                } else {
+                    showError('Erreur : ' + (result.message || 'Impossible de charger l\'emploi'));
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur réseau : ' + error.message);
+            }
+        }
+
+        // Rendre le tableau d'emploi du temps
+        function renderEmploiTable(data) {
+            const { periodes, emploi, jours: joursData, nomProfesseur } = data;
+
+            let html = `<h2 class="titre-emploi">Emploi du temps - ${nomProfesseur}</h2>`;
+            html += `<table class="emploi-table">
+                <thead>
+                    <tr>
+                        <th>Jour</th>`;
+            
+            periodes.forEach(p => {
+                const debut = p.heure_debut.substring(0, 5);
+                const fin = p.heure_fin.substring(0, 5);
+                html += `<th>${debut} - ${fin}</th>`;
+            });
+            
+            html += `</tr></thead><tbody>`;
+
+            joursData.forEach(jour => {
+                html += `<tr><td class="jour-cell">${jour}</td>`;
+                
+                periodes.forEach(periode => {
+                    const seance = emploi.find(s => s.jour === jour && s.id_periode === periode.id_periode);
+                    
+                    if (seance) {
+                        html += `<td>
+                            <div class="cell-seance">
+                                <div class="ligne"><strong>Matière :</strong> ${escapeHtml(seance.matiere)}</div>
+                                <div class="ligne"><strong>Groupe :</strong> ${escapeHtml(seance.groupe)}</div>
+                                <div class="ligne"><strong>Salle :</strong> ${escapeHtml(seance.salle)}</div>
+                            </div>
+                        </td>`;
+                    } else {
+                        html += `<td class="empty">-</td>`;
+                    }
+                });
+                
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('emploi-container').innerHTML = html;
+            clearError();
+        }
+
+        // Utilitaires
+        function showError(message) {
+            document.getElementById('error-container').innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('error-container').innerHTML = '';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../Login/index.html';
+        }
+
+        // Charger les professeurs au démarrage
+        document.addEventListener('DOMContentLoaded', loadProfesseurs);
+    </script>
+<script src="admin-sidebar.js"></script>
+</body>
+</html>

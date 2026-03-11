@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>supnum - Vérifier le code</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="login-compact.css">
+</head>
+<body>
+    <div class="page-container">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon">✉️</div>
+                <div class="card-title">Vérifier le code</div>
+                <div class="card-subtitle">Entrez le code à 6 chiffres envoyé à votre email</div>
+                <div class="email-badge" id="emailBadge"></div>
+            </div>
+
+            <form id="otpForm">
+                <div class="form-group">
+                    <label>Code de vérification</label>
+                    <div class="otp-inputs" id="otpInputs"></div>
+                </div>
+                <button type="submit" class="btn btn-submit" id="submitBtn" disabled>
+                    Vérifier le code
+                </button>
+            </form>
+
+            <div class="timer" id="timer"></div>
+            <div class="resend-link">
+                <a href="#" onclick="event.preventDefault(); resendCode()">Renvoyer le code</a>
+            </div>
+
+            <div class="back-link">
+                <a href="forgot-password.html">Modifier l'email</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        const email = new URLSearchParams(window.location.search).get('email');
+        let timerInterval;
+        const OTP_LENGTH = 6;
+
+        // Initialiser
+        if (!email) {
+            window.location.href = 'forgot-password.html';
+        }
+
+        document.getElementById('emailBadge').textContent = email;
+        initializeOTPInputs();
+        startTimer();
+
+        function initializeOTPInputs() {
+            const container = document.getElementById('otpInputs');
+            for (let i = 0; i < OTP_LENGTH; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.inputMode = 'numeric';
+                input.maxLength = 1;
+                input.className = 'otp-input';
+                input.dataset.index = i;
+
+                input.addEventListener('input', handleOTPInput);
+                input.addEventListener('keydown', handleOTPKeydown);
+                input.addEventListener('paste', handleOTPPaste);
+
+                container.appendChild(input);
+            }
+        }
+
+        function handleOTPInput(e) {
+            const input = e.target;
+            const value = input.value;
+
+            // Only allow numbers
+            input.value = value.replace(/[^0-9]/g, '');
+
+            if (input.value) {
+                input.classList.add('filled');
+                
+                // Auto-focus next input
+                const nextIndex = parseInt(input.dataset.index) + 1;
+                if (nextIndex < OTP_LENGTH) {
+                    const inputs = document.querySelectorAll('.otp-input');
+                    inputs[nextIndex].focus();
+                }
+            } else {
+                input.classList.remove('filled');
+            }
+
+            // Enable submit if all filled
+            const allFilled = Array.from(document.querySelectorAll('.otp-input'))
+                .every(i => i.value);
+            document.getElementById('submitBtn').disabled = !allFilled;
+        }
+
+        function handleOTPKeydown(e) {
+            const input = e.target;
+            const index = parseInt(input.dataset.index);
+
+            if (e.key === 'Backspace' && !input.value && index > 0) {
+                const inputs = document.querySelectorAll('.otp-input');
+                inputs[index - 1].focus();
+            }
+        }
+
+        function handleOTPPaste(e) {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            const digits = text.replace(/[^0-9]/g, '').split('').slice(0, OTP_LENGTH);
+
+            const inputs = document.querySelectorAll('.otp-input');
+            digits.forEach((digit, idx) => {
+                inputs[idx].value = digit;
+                inputs[idx].classList.add('filled');
+            });
+
+            if (digits.length === OTP_LENGTH) {
+                inputs[OTP_LENGTH - 1].focus();
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+
+        function startTimer() {
+            let seconds = 600; // 10 minutes
+
+            const updateTimer = () => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                const timerEl = document.getElementById('timer');
+
+                if (seconds <= 0) {
+                    timerEl.textContent = 'Le code a expiré';
+                    timerEl.classList.add('expired');
+                    document.getElementById('submitBtn').disabled = true;
+                    clearInterval(timerInterval);
+                } else {
+                    timerEl.textContent = `Code valide pendant ${mins}:${secs.toString().padStart(2, '0')}`;
+                    seconds--;
+                }
+            };
+
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function getOTP() {
+            return Array.from(document.querySelectorAll('.otp-input'))
+                .map(i => i.value)
+                .join('');
+        }
+
+        async function resendCode() {
+            const btn = event.target;
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.5';
+
+            try {
+                const result = await API.post('/password/forgot-password', { email });
+                showToast('Nouveau code envoyé', 'success');
+                
+                // Réinitialiser le timer
+                clearInterval(timerInterval);
+                document.querySelectorAll('.otp-input').forEach(i => {
+                    i.value = '';
+                    i.classList.remove('filled');
+                });
+                startTimer();
+
+                setTimeout(() => {
+                    btn.style.pointerEvents = 'auto';
+                    btn.style.opacity = '1';
+                }, 30000);
+            } catch (error) {
+                showToast(error.message || 'Erreur', 'error');
+                btn.style.pointerEvents = 'auto';
+                btn.style.opacity = '1';
+            }
+        }
+
+        document.getElementById('otpForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const otp = getOTP();
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading-spinner"></span>Vérification...';
+
+            try {
+                const result = await API.post('/password/verify-otp', { email, otp });
+
+                if (result.success) {
+                    showToast('Code vérifié avec succès', 'success');
+                    setTimeout(() => {
+                        window.location.href = `reset-password.html?email=${encodeURIComponent(email)}&otp=${otp}`;
+                    }, 1000);
+                } else {
+                    showToast(result.message || 'Code incorrect', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            } catch (error) {
+                showToast(error.message || 'Erreur serveur', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    </script>
+</body>
+</html>
