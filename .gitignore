@@ -9,6 +9,18 @@ lerna-debug.log*
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+
+
+
+
+# Ignorer node_modules dans public
+/public/node_modules/
+
+# Ignorer npm-debug.log dans public
+/public/npm-debug.log
+
+# Ignorer le fichier .env dans public
+/public/.env
 # Runtime data
 pids
 *.pid
