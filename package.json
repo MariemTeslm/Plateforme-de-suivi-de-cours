@@ -1,0 +1,20 @@
+{
+  "name": "pis3",
+  "version": "1.0.0",
+  "description": "A web application to manage schedules ,track lessons , and monitor student progress .",
+  "main": "migrate_session_type.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MariemTeslm/lesson-tracking-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MariemTeslm/lesson-tracking-system/issues"
+  },
+  "homepage": "https://github.com/MariemTeslm/lesson-tracking-system#readme"
+}
