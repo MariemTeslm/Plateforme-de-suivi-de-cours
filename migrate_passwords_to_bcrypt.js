@@ -1,8 +1,8 @@
 const bcrypt = require('bcryptjs');
-const db = require('./public/config/db');
+const db = require('./config/db');
 
 const TABLES = [
-    { name: 'admin', idField: 'id_admin' },
+    { name: 'administrateur', idField: 'id_admin' },
     { name: 'professeur', idField: 'id_professeur' },
     { name: 'etudiant', idField: 'id_etudiant' }
 ];

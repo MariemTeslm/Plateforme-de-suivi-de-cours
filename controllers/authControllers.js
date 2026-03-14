@@ -2,6 +2,11 @@ const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+function isBcryptHash(value) {
+    if (typeof value !== "string") return false;
+    return /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(value);
+}
+
 const login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -29,7 +34,22 @@ const login = async (req, res) => {
             return res.status(401).json({ success: false, message: "Utilisateur non trouvé" });
         }
 
-        const isMatch = await bcrypt.compare(password, user.mot_de_passe);
+        let isMatch = false;
+        const storedPassword = user.mot_de_passe || "";
+
+        if (isBcryptHash(storedPassword)) {
+            isMatch = await bcrypt.compare(password, storedPassword);
+        } else {
+            // Legacy support: allow plaintext passwords and upgrade to bcrypt on successful login.
+            isMatch = password === storedPassword;
+            if (isMatch) {
+                const upgradedHash = await bcrypt.hash(password, 10);
+                await db.query(
+                    `UPDATE ${matchedConfig.table} SET mot_de_passe = ? WHERE ${matchedConfig.idField} = ?`,
+                    [upgradedHash, user[matchedConfig.idField]]
+                );
+            }
+        }
 
         if (!isMatch) {
             return res.status(401).json({ success: false, message: "Mot de passe incorrect" });
